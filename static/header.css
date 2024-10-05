@@ -1,0 +1,14 @@
+.header {
+    width: 100%;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    height: var(--header-height);
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid black;
+}
+
+.header>label {
+    margin-right: 80px;
+}

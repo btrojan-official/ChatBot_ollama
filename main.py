@@ -17,27 +17,26 @@ from typing_extensions import TypedDict
 from typing import List, Annotated
 from langchain.schema import Document
 
-### LLM
 from langchain_ollama import ChatOllama
 from pydantic import BaseModel
-
-local_llm = 'SpeakLeash/bielik-11b-v2.2-instruct-imatrix:Q8_0'
-llm_json_mode = ChatOllama(model=local_llm, temperature=0, format='json')
 
 import operator
 from typing_extensions import TypedDict
 from typing import List, Annotated
 
-##########################################################################
-# Kod Bartka      Kod Bartka    Kod Bartka     Kod Bartka     Kod Bartka #
-##########################################################################
+from langchain.schema import Document
+from langgraph.graph import END
+from langchain_core.messages import HumanMessage, SystemMessage
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import torch
+
 
 # Prompt templates
 from prompts import router_instructions2, doc_grader_instructions2, doc_grader_prompt2, rag_prompt2, answer_grader_instructions2, answer_grader_prompt2, hallucination_grader_instructions2, hallucination_grader_prompt2
 
 
 #LLM
-local_llm2 = 'SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M'
+local_llm2 = 'llama3.2'
 llm2 = ChatOllama(model=local_llm2, temperature=0.2)
 llm_json_mode2 = ChatOllama(model=local_llm2, temperature=0.2, format='json')
 
@@ -50,7 +49,12 @@ retriever2 = vectorstore2.as_retriever(k=3)
 
 #Post-processing
 def format_docs(docs2):
-    return "\n\n".join(doc2.page_content for doc2 in docs2)
+    if len(docs2) == 0:
+        return "No relevant documents found."
+    
+    if type(docs2[0]) == Document:
+        return "\n\n".join(doc2.page_content for doc2 in docs2)
+    return "\n\n".join(doc2 for doc2 in docs2)
 
 #Web search
 web_search_tool2 = DuckDuckGoSearchResults(k=3)
@@ -373,8 +377,26 @@ def ask_question(question2, max_retries=1):
 
     return model_output
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],  
+)
+
 class Message(BaseModel):
   content: str
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def index():
+  return RedirectResponse(url="/static/index.html")
 
 @app.post("/bartek")
 def read_root(message:Message):

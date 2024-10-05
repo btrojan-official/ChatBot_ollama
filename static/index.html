@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="slider.css">
+  <link rel="stylesheet" href="header.css">
+  <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+  <div id="app">
+    <div class="header">
+      <h1>LexAdiutor 2.0</h1>
+
+      <label class="switch">
+        <input type="checkbox" v-model="crypto_mode" id="crypto_mode_switch" style="display: none">
+        <span class="slider round"></span>
+      </label>
+
+      <label for="crypto_mode_switch">Crypto mode</label>
+    </div>
+
+    <div class="main">
+      <div class="left">
+        <div class="history"></div>
+      </div>
+
+      <div class="right">
+        <div class="textbox" ref="scrollBox">
+          <div v-for="mes of prev_messages" class="message">
+            {{mes}}
+          </div>
+        </div>
+        <div class="prompt">
+          <button>Clear</button>
+          <input type="text" placeholder="Write message" v-model="message" @keyup.enter="send()">
+          <button @click="send()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+
+    <script>
+      const appData = {
+        crypto_mode: false,
+        chat_history: [],
+        message: "",
+        prev_messages: [],
+      }
+      const ItemsComponent = {
+        template:
+          ` 
+          <div class="message">
+            <template v-for="item of items">
+              <input type="checkbox" :id="item.text"><label :for="item.text">{{item.text}}</label>
+            </template>  
+          </div>
+        `,
+        data() {
+          return appData
+        }
+      };
+      const app = Vue.createApp({
+        data() {
+          return appData
+        },
+        components: {
+          "items-component": ItemsComponent,
+        },
+        methods: {
+          scrollToBottom() {
+            this.$nextTick(() => {
+              const scrollBox = this.$refs.scrollBox;
+              scrollBox.scrollTop = scrollBox.scrollHeight; // Scroll to bottom
+            });
+          },
+          send() {
+            console.log(this.message);
+            this.prev_messages.push(this.message);
+            this.scrollToBottom();
+
+            fetch("http://127.0.0.1:8000/bartek", { //Tutaj podmień adres API na ten serwerowy
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ content: this.message })
+            })
+              .then(response => response.json())
+              .then(data => {
+                console.log(data.content);
+                this.prev_messages.push(data.content);
+                this.scrollToBottom();
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+            this.message = "";
+          }
+        }
+      }).mount("#app");
+    </script>
+</body>
+
+</html>
