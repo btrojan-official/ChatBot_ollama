@@ -34,11 +34,32 @@ import torch
 # Prompt templates
 from prompts import router_instructions2, doc_grader_instructions2, doc_grader_prompt2, rag_prompt2, answer_grader_instructions2, answer_grader_prompt2, hallucination_grader_instructions2, hallucination_grader_prompt2
 
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    # This is the default and can be omitted
+    api_key="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",
+)
 
 #LLM
-local_llm2 = 'llama3.2'
-llm2 = ChatOllama(model=local_llm2, temperature=0.2)
-llm_json_mode2 = ChatOllama(model=local_llm2, temperature=0.2, format='json')
+# local_llm2 = 'llama3.2'
+# llm2 = ChatOllama(model=local_llm2, temperature=0.2)
+# llm_json_mode2 = ChatOllama(model=local_llm2, temperature=0.2, format='json')
+
+def send_query_to_openai(system, query):
+    
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",  # Możesz zmienić na 'gpt-4' w zależności od dostępności
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=150,
+        temperature=0.5
+    )
+    print(f"\n\nAnswer: {response.choices[0].message.content} \n\n")
+    return response.choices[0].message.content
 
 #Embedding model
 embeddings2 = NomicEmbeddings(model="nomic-embed-text-v1.5", inference_mode="local")
@@ -77,8 +98,9 @@ class GraphState2(TypedDict):
 
 #Graph nodes (actions functions)
 def rerank(query):
-    import os
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+    print("LOad vectorstore...")
 
     vectorstore2 = FAISS.load_local("my_faiss_store", embeddings=embeddings2, allow_dangerous_deserialization=True)
 
@@ -104,9 +126,6 @@ def rerank(query):
         return reranked_chunks
 
     reranked_chunks = rerank_chunks(query, chunks)
-
-    for i, chunk in enumerate(reranked_chunks[:10]):
-        print(f"Rank {i+1}: {chunk}")
 
     return reranked_chunks[:6]
 def retrieve2(state):
@@ -143,7 +162,8 @@ def generate2(state):
     docs_txt2 = format_docs(documents)
     json_format = "Ważne byś wszystkie swoje opowiedzie przedstawiał w postaci zwykłego tekstu pisanego (zgodnie z promptami), czyli nie zwracał nic w stylu 'Question':some random text, 'Answer':some other random text. Just give me the text,"
     rag_prompt_formatted2 = rag_prompt2.format(context=docs_txt2, history=history, question=question)
-    generation2 = llm2.invoke([SystemMessage(content=json_format), HumanMessage(content=rag_prompt_formatted2)])
+    generation2 = send_query_to_openai(json_format, rag_prompt_formatted2)
+    # generation2 = llm2.invoke([SystemMessage(content=json_format), HumanMessage(content=rag_prompt_formatted2)])
     return {"generation": generation2, "loop_step": loop_step+1}
 
 def grade_documents2(state):
@@ -173,8 +193,9 @@ def grade_documents2(state):
 
     for d in documents:
         doc_grader_prompt_formatted = doc_grader_prompt2.format(document=d, history=history, question=question)
-        result = llm_json_mode2.invoke([SystemMessage(content=doc_grader_instructions2)] + [HumanMessage(content=doc_grader_prompt_formatted)])
-        grade = json.loads(result.content)['binary_score']
+        result = send_query_to_openai(doc_grader_instructions2, doc_grader_prompt_formatted)
+        # result = llm_json_mode2.invoke([SystemMessage(content=doc_grader_instructions2)] + [HumanMessage(content=doc_grader_prompt_formatted)])
+        grade = result
         # Document relevant
         if "yes" in grade.lower():
             print("---GRADE: DOCUMENT RELEVANT---")
@@ -210,7 +231,7 @@ def web_search2(state):
     # Web search
     try:
         docs = web_search_tool2.invoke({"query": question})
-        docs = {"answer": "No web search results found"}
+        # docs = {"answer": "No web search results found"}
         web_results = Document(page_content=docs)
         documents.append(web_results)
     except:
@@ -230,12 +251,13 @@ def route_question2(state):
     """
 
     print("---ROUTE QUESTION---")
-    route_question = llm_json_mode2.invoke([SystemMessage(content=router_instructions2)] + [HumanMessage(content=state["question"])])
-    source = json.loads(route_question.content)['datasource']
+    # route_question = llm_json_mode2.invoke([SystemMessage(content=router_instructions2)] + [HumanMessage(content=state["question"])])
+    route_question = send_query_to_openai(router_instructions2, state["question"])
+    source = route_question
     if 'websearch' in source:
         print("---ROUTE QUESTION TO WEB SEARCH---")
         return "websearch"
-    elif 'vectorstore' in source:
+    else:
         print("---ROUTE QUESTION TO RAG---")
         return "vectorstore"
 
@@ -283,9 +305,10 @@ def grade_generation_v_documents_and_question2(state):
     generation = state["generation"]
     max_retries = state.get("max_retries", 5) # Default to 3 if not provided
 
-    hallucination_grader_prompt_formatted = hallucination_grader_prompt2.format(documents=format_docs(documents),history=history, generation=generation.content)
-    result = llm_json_mode2.invoke([SystemMessage(content=hallucination_grader_instructions2)] + [HumanMessage(content=hallucination_grader_prompt_formatted)])
-    grade = json.loads(result.content)['binary_score']
+    hallucination_grader_prompt_formatted = hallucination_grader_prompt2.format(documents=format_docs(documents),history=history, generation=generation)
+    # result = llm_json_mode2.invoke([SystemMessage(content=hallucination_grader_instructions2)] + [HumanMessage(content=hallucination_grader_prompt_formatted)])
+    result = send_query_to_openai(hallucination_grader_instructions2, hallucination_grader_prompt_formatted)
+    grade = result
 
     # Check hallucination
     if "yes" in grade.lower():
@@ -293,9 +316,10 @@ def grade_generation_v_documents_and_question2(state):
         # Check question-answering
         print("---GRADE GENERATION vs QUESTION---")
         # Test using question and generation from above 
-        answer_grader_prompt_formatted = answer_grader_prompt2.format(question=question, history=history, generation=generation.content)
-        result = llm_json_mode2.invoke([SystemMessage(content=answer_grader_instructions2)] + [HumanMessage(content=answer_grader_prompt_formatted)])
-        grade = json.loads(result.content)['binary_score']
+        answer_grader_prompt_formatted = answer_grader_prompt2.format(question=question, history=history, generation=generation)
+        # result = llm_json_mode2.invoke([SystemMessage(content=answer_grader_instructions2)] + [HumanMessage(content=answer_grader_prompt_formatted)])
+        result = send_query_to_openai(answer_grader_instructions2, answer_grader_prompt_formatted)
+        grade = result
         if "yes" in grade.lower():
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
             return "useful"
@@ -365,7 +389,8 @@ def ask_question(question2, max_retries=1):
     inference = []
     for event in graph2.stream(inputs, stream_mode="values"):
         inference.append(event)
-        print(event)
+        
+    print(f"\n\n HEADER: \n{inference[-1]['generation']} \n\n")
 
     model_output = inference[-1]['generation']
     _history.append({"sender":"you", "message":model_output})
@@ -398,4 +423,4 @@ def index():
 
 @app.post("/bartek")
 def read_root(message:Message):
-  return ask_question(message.content)
+  return {"content":ask_question(message.content)}

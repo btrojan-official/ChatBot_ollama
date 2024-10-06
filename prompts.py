@@ -6,7 +6,9 @@ Also in database you have documents about shitcoins (very cheap cryptocurrencies
                                     
 Use the vectorstore for questions on these topics. For all else, and especially for current events, use web-search.
 
-Return JSON with single key, datasource, that is 'websearch' or 'vectorstore' depending on the question."""
+Return single word: datasource, that is 'websearch' or 'vectorstore' depending on the question. Only return 'websearch' if the question is absolutely not related to crypto, shitcoints or law.
+
+Else return 'vectorstore'."""
 
 
 doc_grader_instructions2 = """You are a grader assessing relevance of a retrieved document to a user question.
@@ -17,7 +19,7 @@ doc_grader_prompt2 = """Here is the retrieved document: \n\n {document} \n\n Her
 
 This carefully and objectively assess whether the document contains at least some information that is relevant to the question.
 
-Return JSON with single key, binary_score, that is 'yes' or 'no' score to indicate whether the document contains at least some information that is relevant to the question."""
+Return 'yes' or 'no' indicating if document contains relevant information to the question."""
 
 rag_prompt2 = """You are an assistant for question-answering tasks. 
 
@@ -70,7 +72,7 @@ Avoid simply stating the correct answer at the outset."""
 
 hallucination_grader_prompt2 = """FACTS: \n\n {documents} \n\n HISTORY OF CONVERSATION: \n\n {history} \n\n STUDENT ANSWER: {generation}. 
 
-Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER is grounded in the FACTS. And a key, explanation, that contains an explanation of the score."""
+Return the key 'yes' or 'no' score to indicate whether the STUDENT ANSWER is grounded in the FACTS."""
 
 
 answer_grader_instructions2 = """You are a teacher grading a quiz. 
@@ -96,4 +98,4 @@ Avoid simply stating the correct answer at the outset."""
 
 answer_grader_prompt2 = """QUESTION: \n\n {question} \n\n CONVERSATION HISTORY: \n\n {history} \n\n STUDENT ANSWER: {generation}. 
 
-Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER meets the criteria. And a key, explanation, that contains an explanation of the score."""
+Return binary_score 'yes' or 'no' score to indicate whether the STUDENT ANSWER meets the criteria."""
