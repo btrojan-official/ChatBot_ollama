@@ -6,16 +6,22 @@
 }
 
 .left {
-    flex: 1;
+    width: 240px;
     padding-right: var(--padding-1);
-    border-right: 1px solid black;
+    border-right: 1px solid var(--lightgray);
     height: 100%;
 }
 
 .history {
     width: 100%;
     height: 100%;
-    border: 5px solid black;
+}
+
+.old-chat {
+    border-bottom: 1px solid var(--lightgray);
+    padding: 10px;
+    font-size: 1.2em;
+    cursor: pointer;
 }
 
 .right {
@@ -24,37 +30,55 @@
     padding-left: var(--padding-1);
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 .textbox {
-    width: 100%;
+    width: min(960px, 100%);
     flex: 1;
-    border: 5px solid black;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: flex-end;
     padding: 10px;
     overflow: auto;
+    margin-bottom: var(--padding-1);
 }
 
 .message {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.user {
+    justify-content: flex-end;
+}
+
+.model {
+    justify-content: flex-start;
+}
+
+.message-content {
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 10px;
     max-width: 70%;
     word-wrap: break-word;
     word-break: break-word;
-    border: 1px solid black;
+    border: 1px solid var(--lightgray);
 }
 
 .prompt {
     width: 100%;
-    height: 60px;
+    height: 70px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 5px solid black;
+    border: 3px solid var(--lightgray);
+    border-radius: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .prompt>input {
@@ -62,9 +86,23 @@
     height: 100%;
     font-size: 1.1em;
     padding: 5px;
+
+    border: none;
+    outline: none;
 }
 
 .prompt>button {
     aspect-ratio: 1;
     height: 100%;
+    padding: 10px;
+    background-color: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    border-radius: 20px;
+}
+
+.prompt>button>img {
+    width: 100%;
+    aspect-ratio: 1;
 }

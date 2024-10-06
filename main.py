@@ -80,8 +80,6 @@ def rerank(query):
     import os
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-    embeddings2 = NomicEmbeddings(model="nomic-embed-text-v1.5", inference_mode="local")
-
     vectorstore2 = FAISS.load_local("my_faiss_store", embeddings=embeddings2, allow_dangerous_deserialization=True)
 
     results = vectorstore2.similarity_search(query, k=50)
@@ -211,7 +209,7 @@ def web_search2(state):
 
     # Web search
     try:
-        docs = web_search_tool2.invoke({"query": "site:podatki.gov.pl " + question})
+        docs = web_search_tool2.invoke({"query": question})
         docs = {"answer": "No web search results found"}
         web_results = Document(page_content=docs)
         documents.append(web_results)

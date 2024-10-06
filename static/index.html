@@ -13,7 +13,7 @@
 
 <body>
   <div id="app">
-    <div class="header">
+    <div class="header" :class="{ cryptoHeader:isCryptoMode() }">
       <h1>LexAdiutor 2.0</h1>
 
       <label class="switch">
@@ -21,24 +21,31 @@
         <span class="slider round"></span>
       </label>
 
-      <label for="crypto_mode_switch">Crypto mode</label>
+      <label for="crypto_mode_switch">CRYPTO MODE</label>
     </div>
 
-    <div class="main">
+    <div class="main" :class="{ cryptoMain:isCryptoMode() }">
       <div class="left">
-        <div class="history"></div>
+        <div class="history" :class="{ cryptoLeft:isCryptoMode() }">
+          <div class="old-chat">Old chat</div>
+          <div class="old-chat">Old chat</div>
+          <div class="old-chat">Old chat</div>
+          <div class="old-chat">Old chat</div>
+        </div>
       </div>
 
       <div class="right">
-        <div class="textbox" ref="scrollBox">
-          <div v-for="mes of prev_messages" class="message">
-            {{mes}}
+        <div class="textbox" :class="{ cryptoTextBox:isCryptoMode()}" ref="scrollBox">
+          <div v-for="mes of prev_messages" class="message" :class="mes.sender">
+            <div class="message-content">
+              {{mes.content}}
+            </div>
           </div>
         </div>
-        <div class="prompt">
-          <button>Clear</button>
+        <div class="prompt" :class="{ cryptoPrompt:isCryptoMode() }">
+          <button @click="clear()"><img :src="getImg('bin')" alt="Clear"></button>
           <input type="text" placeholder="Write message" v-model="message" @keyup.enter="send()">
-          <button @click="send()">Send</button>
+          <button @click="send()"><img :src="getImg('send')" alt="Send"></button>
         </div>
       </div>
     </div>
@@ -81,8 +88,8 @@
             });
           },
           send() {
-            console.log(this.message);
-            this.prev_messages.push(this.message);
+            this.prev_messages.push({ sender: "user", content: this.message });
+            this.prev_messages.push({ sender: "model", content: "Waiting for model response... It may take some time" });
             this.scrollToBottom();
 
             fetch("http://127.0.0.1:8000/bartek", { //Tutaj podmień adres API na ten serwerowy
@@ -95,13 +102,29 @@
               .then(response => response.json())
               .then(data => {
                 console.log(data.content);
-                this.prev_messages.push(data.content);
+                this.prev_messages.pop();
+                this.prev_messages.push({ sender: "model", content: data.content });
                 this.scrollToBottom();
               })
               .catch((error) => {
                 console.error("Error:", error);
               });
             this.message = "";
+          },
+          clear() {
+            this.prev_messages = [];
+            this.scrollToBottom();
+          },
+          isCryptoMode() {
+            return this.crypto_mode
+          },
+          getImg(name) {
+            if (this.isCryptoMode()) {
+              if (name == "send") return `http://127.0.0.1:5500/gfx/send-white.png`
+              return `http://127.0.0.1:5500/gfx/recycle-bin-white.png`
+            }
+            if (name == "bin") return `http://127.0.0.1:5500/gfx/recycle-bin.png`
+            return `http://127.0.0.1:5500/gfx/send.png`
           }
         }
       }).mount("#app");
