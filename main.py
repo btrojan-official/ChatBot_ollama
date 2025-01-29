@@ -1,3 +1,13 @@
+# =============================================================
+#
+# I KNOW, THIS CODE LOOKS SCARY, but it was *one night stand* and
+# I didn't really care about future of this repo. I just needed
+# to run it somehow and make it work
+# I know, I could at least use isort... :( 
+#
+# =============================================================
+
+
 from typing import Dict, List, TypedDict
 from fastapi import FastAPI, HTTPException
 import time
